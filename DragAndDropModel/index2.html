@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Drag and Drop</title>
+</head>
+<style>
+    body {
+        font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+        font-size: 14px;
+        font-weight: bold;
+        line-height: 1.42857143;
+        color: #333;
+    }
+    div {
+        margin: 0em;
+        padding: 2em;
+        }
+
+    .target {
+        border: 4px solid black;
+        background-color: lightgrey;
+        border-radius: 5px;
+    }
+
+    li, .button {
+        list-style: none;
+        border: 2px solid black;
+        padding: 10px;
+        width: fit-content;
+        margin: 4px;
+        background-color: lightblue;
+        border-radius: 5px;
+    }
+    table{
+        border-collapse: collapse;
+        width: 100%;
+        border: 2px solid black;
+        min-height: 200px;
+
+    }
+    td {
+        width: 50%;
+        border: 2px solid black;
+    }
+    .remove {
+        position: absolute;
+        top: -200px
+    }
+</style>
+    <body>
+        <table>
+            <tr>
+                <td>
+                    <div id="source1" draggable="true" data-attribute="0" class="button">Drag Item 1 to the Drop Zone</div>
+                        
+                </td>
+                <td>
+                    <div id="source2" draggable="true" data-attribute="0" class="button">Drag Item 2 to the Drop Zone</div>
+                </td>
+            </tr>
+        </table>
+        <div class="target">Drop Zone</div>
+
+        <button id="reset">Reset</button>
+    </body>
+    <script>
+
+        window.addEventListener('storage', () => {
+            console.log("LocalStorage has changed:");
+
+            let ghad = Object.entries(localStorage);
+            for (let index = 0; index < ghad.length; index++) {
+                console.log(ghad[index][0] + " : " + ghad[index][1]);
+                try {
+                let articleToRemove = document.querySelector("#" + ghad[index][0]).getAttribute("data-attribute");
+                if (articleToRemove < ghad[index][1] && articleToRemove != 0) {
+                    document.querySelector("#" + ghad[index][0]).classList.add("remove");
+                }
+                } catch (error) {
+                    console.log("Error: " + error);
+                }
+
+            }
+        });
+
+        const source1 = document.querySelector("#source1");
+        const source2 = document.querySelector("#source2");
+        const target = document.querySelector(".target");
+
+        let weHaveGrabbed;
+
+        function clickOnArticle(ev) {
+            weHaveGrabbed = ev.target.id;
+            console.log("x we have grabbed", weHaveGrabbed);
+            let timeStamp = Date.now();
+            let updateAttribute = document.querySelector("#" + weHaveGrabbed);
+            updateAttribute.setAttribute("data-attribute", timeStamp);
+            let dataGrabbed = document.querySelector("#" + weHaveGrabbed).getAttribute("data-attribute");
+            console.log("x data grabbed", dataGrabbed);
+            localStorage.setItem(weHaveGrabbed, timeStamp);
+            
+        }
+
+        function dropArticle(ev) {
+            ev.preventDefault();
+            let idOfObjectDropped = ev.dataTransfer.getData("text");
+            console.log("id of object dropped: " + idOfObjectDropped);
+
+            // // lets add a data-attribute to the chosen element and write it to localstorage. This will be newer than the one we have from the click event above
+            let timeStamp = Date.now();
+            let updateAttribute = document.querySelector("#" + idOfObjectDropped);
+                try {
+                    updateAttribute.setAttribute("data-attribute", timeStamp);
+                    localStorage.setItem(idOfObjectDropped, timeStamp);
+                } catch (error) {
+                    console.log("Error: " + error);
+            }
+        }
+            
+    
+    
+        function dragstartHandler(ev) {
+            
+                console.log(`dragstart: target.id = ${ev.target.id}`);
+                // Add this element's id to the drag payload so the drop handler will
+                // know which element to add to its tree
+                ev.dataTransfer.setData("text/plain", ev.target.id);
+                ev.dataTransfer.effectAllowed = "move";
+
+                weHaveGrabbed = ev.target.id;
+                console.log("dragstartHandler", weHaveGrabbed);
+                clickOnArticle(ev);
+
+        }
+
+        function dropHandler(ev, weHaveGrabbed) {
+            ev.preventDefault();
+            console.log(`dropHandler: target.id = ${ev.target.id} `);
+
+            // Get the id of the target and add the moved element to the target's DOM
+            const data = ev.dataTransfer.getData("text");
+
+            try {
+                ev.target.appendChild(document.getElementById(data));
+                console.log("RL ", data);
+                // Print each item's "kind" and "type"
+                if (ev.dataTransfer.items) {
+                    for (const item of ev.dataTransfer.items) {
+                        console.log(`kind = ${item.kind}, type = ${item.type}`);
+                    }
+                }
+            } catch (error) {
+                console.log("Error: " + error);
+            }
+
+            dropArticle(ev);
+
+        }
+
+        function dragoverHandler(ev) {
+            let articleTimeStamp = new Date().valueOf();
+            ev.preventDefault();
+            // Set the dropEffect to move
+            ev.dataTransfer.dropEffect = "move"
+        }
+
+
+
+
+            source1.addEventListener("dragstart", dragstartHandler)
+            source2.addEventListener("dragstart", dragstartHandler)
+            target.addEventListener("dragover", dragoverHandler)
+            target.addEventListener("drop", dropHandler)
+
+            const reset = document.querySelector("#reset");
+            reset.addEventListener("click", () => document.location.reload());
+    </script>
+</html>
